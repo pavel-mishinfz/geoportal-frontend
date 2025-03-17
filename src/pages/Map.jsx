@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { YMaps, Map, TypeSelector, Polygon, Placemark, Button } from '@pbe/react-yandex-maps';
+import axios from 'axios';
+
 
 const Main = () => {
     const API_KEY = '5703c528-fb4a-4c0a-a0b1-23d68ed92a66';
@@ -39,6 +41,38 @@ const Main = () => {
         // Предотвращаем стандартное поведение двойного клика на карте
         e.preventDefault();
         e.stopPropagation();
+    };
+
+    const handleSavePolygon = async (coordinates) => {
+        if (coordinates.length < 3) {
+            alert('Полигон должен содержать как минимум 3 точки.');
+            return;
+        }
+
+        try {
+            const closedCoordinates = [...coordinates, coordinates[0]];
+
+            const requestBody = {
+                user_id: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                name: 'Test test',
+                geometry: {
+                    type: 'Polygon',
+                    coordinates: [
+                        closedCoordinates
+                    ]
+                }
+            };
+
+            const response = await axios.post(`http://${window.location.hostname}:8000/areas`, requestBody, {
+                headers: {
+                    Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                },
+            });
+
+            console.log('Сохранённый полигон: ', response.data);
+        } catch (error) {
+            console.error('Ошибка: ', error);
+        }
     };
 
     return (
@@ -95,6 +129,12 @@ const Main = () => {
                     options={{ maxWidth: 200 }}
                     defaultState={{ selected: editMode }}
                     onClick={toggleEditMode}
+                />
+
+                <Button
+                    data={{ content: 'Сохранить полигон' }}
+                    options={{ maxWidth: 200 }}
+                    onClick={() => handleSavePolygon(polygonCoordinates)}
                 />
             </Map>
         </YMaps>
