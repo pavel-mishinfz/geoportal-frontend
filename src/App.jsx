@@ -1,12 +1,12 @@
 import { BrowserRouter as Router, Route, Routes} from 'react-router-dom';
-import Map from './pages/Map';
+import Main from './pages/Main';
 
 
 const App = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Map />}/>
+        <Route path="/" element={<Main />}/>
 
       </Routes>
     </Router>

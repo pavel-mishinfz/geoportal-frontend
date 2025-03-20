@@ -1,0 +1,139 @@
+.sidebar {
+    position: fixed; /* Изменено с absolute на fixed */
+    left: 0;
+    top: 0;
+    width: 400px;
+    height: 100vh; /* Ограничиваем высоту видимой областью экрана */
+    background: white;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+    z-index: 1000;
+    padding: 20px;
+    overflow-y: hidden; /* Убираем прокрутку всего сайдбара */
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-shrink: 0; /* Не даем заголовку сжиматься */
+}
+
+.close-btn {
+    border: none;
+    background: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    transition: color 0.2s ease;
+}
+
+.close-btn:hover {
+    color: #333;
+}
+
+.add-polygon-section {
+    margin-bottom: 20px;
+    flex-shrink: 0; /* Не даем секции добавления сжиматься */
+}
+
+.add-polygon-btn {
+    width: 100%;
+    padding: 10px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s ease;
+}
+
+.add-polygon-btn:hover {
+    background: #45a049;
+}
+
+.polygon-name-input {
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 14px;
+    color: #333;
+    background: #f9f9f9;
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.polygon-name-input:focus {
+    border-color: #4CAF50;
+    background: #fff;
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+}
+
+.polygon-name-input::placeholder {
+    color: #999;
+    font-style: italic;
+}
+
+.polygon-name-input:hover:not(:focus) {
+    border-color: #ccc;
+    background: #fff;
+}
+
+.polygon-name-input.error {
+    border-color: #e74c3c;
+    background: #fff6f6;
+}
+
+.save-polygon-btn {
+    width: 100%;
+    padding: 10px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s ease;
+}
+
+.save-polygon-btn:hover {
+    background: #45a049;
+}
+
+.polygons-list {
+    flex-grow: 1; /* Список занимает все доступное пространство */
+    overflow-y: auto; /* Прокрутка только внутри списка */
+}
+
+.polygon-item {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+}
+
+.polygon-name {
+    transition: color 0.2s ease;
+}
+
+.polygon-item:hover {
+    background: #f5f5f5;
+}
+
+.polygon-item:active {
+    background: #e0e0e0;
+}
+
+.polygon-item:last-child {
+    border-bottom: none;
+}
