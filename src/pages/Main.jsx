@@ -12,7 +12,10 @@ const Main = () => {
     const [polygons, setPolygons] = useState([]);
     const [isAddingPolygon, setIsAddingPolygon] = useState(false);
     const [polygonName, setPolygonName] = useState('');
-    const [selectedPolygonCoords, setSelectedPolygonCoords] = useState(null); // Новое состояние для выбранного полигона
+    const [selectedPolygonCoords, setSelectedPolygonCoords] = useState(null);
+    const [selectedPolygonId, setSelectedPolygonId] = useState(null); // Добавляем ID выбранного полигона
+    const [isEditing, setIsEditing] = useState(false);
+
 
     useEffect(() => {
         fetchPolygons();
@@ -32,7 +35,7 @@ const Main = () => {
     };
 
     const handleMapClick = (e) => {
-        if (!isAddingPolygon) return;
+        if (!isAddingPolygon && !isEditing) return;
         const coords = e.get('coords');
         setPolygonCoordinates([...polygonCoordinates, coords]);
     };
@@ -55,12 +58,12 @@ const Main = () => {
         e.stopPropagation();
     };
 
-    const handleSavePolygon = async (coordinates) => {
+    const handleSavePolygon = async (coordinates, polygonId = null) => {
         if (coordinates.length < 3) {
             alert('Полигон должен содержать как минимум 3 точки.');
             return;
         }
-
+    
         try {
             const closedCoordinates = [...coordinates, coordinates[0]];
             const requestBody = {
@@ -71,20 +74,31 @@ const Main = () => {
                     coordinates: [closedCoordinates]
                 }
             };
-
-            await axios.post(`http://${process.env.REACT_APP_HOSTNAME}/areas`, requestBody, {
-                headers: {
-                    Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
-                },
-            });
-
+    
+            if (polygonId) {
+                await axios.put(`http://${process.env.REACT_APP_HOSTNAME}/areas/${polygonId}`, requestBody, {
+                    headers: {
+                        Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                    },
+                });
+            } else {
+                await axios.post(`http://${process.env.REACT_APP_HOSTNAME}/areas`, requestBody, {
+                    headers: {
+                        Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                    },
+                });
+            }
+    
             setPolygonCoordinates([]);
             setIsAddingPolygon(false);
+            setIsEditing(false); // Добавляем сброс режима редактирования
             setPolygonName('');
+            setSelectedPolygonId(null); // Сбрасываем выбранный полигон
+            setSelectedPolygonCoords(null); // Сбрасываем координаты
             setIsSidebarOpen(true);
             fetchPolygons();
         } catch (error) {
-            console.error('Ошибка при создании полигона: ', error);
+            console.error('Ошибка при сохранении полигона:', error);
         }
     };
 
@@ -102,12 +116,49 @@ const Main = () => {
                 },
             });
             const polygon = response.data;
-            const coords = polygon.geometry.coordinates[0].slice(0, -1); // Убираем дублирующую точку
+            const coords = polygon.geometry.coordinates[0].slice(0, -1);
             setSelectedPolygonCoords(coords);
-            setPolygonCoordinates([]); // Очищаем текущие координаты редактирования
-            setIsAddingPolygon(false); // Выключаем режим добавления
+            setSelectedPolygonId(polygonId);
+            setPolygonCoordinates([]);
+            setIsAddingPolygon(false);
+            setIsEditing(false);
+            setPolygonName(polygon.name);
         } catch (error) {
             console.error('Ошибка при загрузке полигона:', error);
+        }
+    };
+
+    const handleEditPolygon = (polygonId) => {
+        setIsEditing(true);
+        setPolygonCoordinates(selectedPolygonCoords);
+        setSelectedPolygonCoords(null);
+    };
+
+    const handleSaveEdit = async () => {
+        await handleSavePolygon(polygonCoordinates, selectedPolygonId);
+        setIsEditing(false);
+        setSelectedPolygonId(null);
+    };
+
+    const handleCancelEdit = () => {
+        setIsEditing(false);
+        setPolygonCoordinates([]);
+        setSelectedPolygonCoords(null);
+        setSelectedPolygonId(null);
+    };
+
+    const handleDeletePolygon = async () => {
+        try {
+            await axios.delete(`http://${process.env.REACT_APP_HOSTNAME}/areas/${selectedPolygonId}`, {
+                headers: {
+                    Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                },
+            });
+            setSelectedPolygonCoords(null);
+            setSelectedPolygonId(null);
+            fetchPolygons();
+        } catch (error) {
+            console.error('Ошибка при удалении полигона:', error);
         }
     };
 
@@ -147,7 +198,7 @@ const Main = () => {
                                     key={index}
                                     geometry={coords}
                                     options={{
-                                        draggable: isAddingPolygon,
+                                        draggable: isAddingPolygon || isEditing,
                                         preset: 'islands#circleIcon',
                                         iconColor: '#000000',
                                     }}
@@ -199,6 +250,7 @@ const Main = () => {
                         }}
                         onClick={() => setIsSidebarOpen(true)}
                     />
+
                 </Map>
 
                 {isSidebarOpen && (
@@ -212,7 +264,9 @@ const Main = () => {
                                     setIsAddingPolygon(false);
                                     setPolygonCoordinates([]);
                                     setPolygonName('');
-                                    setSelectedPolygonCoords(null); // Очищаем выбранный полигон при закрытии
+                                    setSelectedPolygonCoords(null);
+                                    setSelectedPolygonId(null);
+                                    setIsEditing(false);
                                 }}
                             >
                                 ×
@@ -250,15 +304,69 @@ const Main = () => {
                             {polygons.map((polygon) => (
                                 <div
                                     key={polygon.id}
-                                    className="polygon-item"
+                                    className={`polygon-item ${selectedPolygonId === polygon.id ? 'selected' : ''}`}
                                     onClick={() => handlePolygonSelect(polygon.id)}
                                 >
-                                    <span
-                                        className="polygon-name"
+                                    <div 
+                                        className="polygon-label"
                                     >
-                                        {polygon.name}
-                                    </span>
-                                    <span>{new Date(polygon.created_at).toLocaleDateString()} {new Date(polygon.created_at).toLocaleTimeString()}</span>
+                                        {selectedPolygonId === polygon.id && isEditing ? (
+                                            <input
+                                            type="text"
+                                            value={polygonName}
+                                            onChange={(e) => setPolygonName(e.target.value)}
+                                            placeholder="Название полигона"
+                                            className="polygon-name-input"
+                                            onClick={(e) => e.stopPropagation()} // Предотвращаем выбор полигона при клике на input
+                                        />
+                                        ) : (
+                                            <span className="polygon-name">{polygon.name}</span>
+
+                                        )}
+                                        <span>{new Date(polygon.created_at).toLocaleDateString()} {new Date(polygon.created_at).toLocaleTimeString()}</span>
+                                    </div>
+
+                                    {selectedPolygonId === polygon.id && (
+                                        <div className="polygon-controls">
+                                            {!isEditing ? (
+                                                <>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleEditPolygon(polygon.id);
+                                                        }}
+                                                        className="control-btn"
+                                                    >
+                                                        <img src="/assets/pencil.svg" alt="Edit" />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation(); // Предотвращаем всплытие
+                                                            handleDeletePolygon(polygon.id);
+                                                        }}
+                                                        className="control-btn"
+                                                    >
+                                                        <img src="/assets/trash.svg" alt="Delete" />
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        onClick={handleSaveEdit}
+                                                        className="control-btn"
+                                                    >
+                                                        <img src="/assets/save.svg" alt="Save" />
+                                                    </button>
+                                                    <button
+                                                        onClick={handleCancelEdit}
+                                                        className="control-btn"
+                                                    >
+                                                        <img src="/assets/cancel.svg" alt="Cancel" />
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
