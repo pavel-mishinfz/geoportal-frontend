@@ -163,6 +163,50 @@ const Main = () => {
         }
     };
 
+    const handleAnalysis = async () => {
+        const today = new Date();
+
+        const rawStartDate = new Date(today);
+        rawStartDate.setFullYear(today.getFullYear() - 1);
+        const startDate = rawStartDate.toISOString().split('T')[0]; 
+
+        const endDate = today.toISOString().split('T')[0];
+
+        let requestBody = {
+            id: selectedPolygonId,
+            geometry_geojson: {
+                type: "Polygon",
+                coordinates: [
+                    selectedPolygonCoords
+                ]
+            },
+            date_start: startDate, // "2024-06-01"
+            date_end: endDate, // "2024-09-01"
+            resolution: 10
+        }
+
+        try {
+            const response = await axios.post(`http://localhost:8007/images`, requestBody, {
+                headers: {
+                    Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                },
+            });
+            
+            const listImagesInfo = response.data;
+            requestBody = {
+                images_ids: listImagesInfo.map(item => item.id),
+                images_paths: listImagesInfo.map(item => item.url)
+            }
+            await axios.post(`http://localhost:8009/analysis`, requestBody, {
+                headers: {
+                    Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                },
+            });
+        } catch (error) {
+            console.error('Ошибка при загрузке снимков:', error);
+        }
+    };
+
     const openDeleteModal = () => {
         setIsModalOpen(true); // Открываем модальное окно
     };
@@ -211,6 +255,7 @@ const Main = () => {
                 handleSaveEdit={handleSaveEdit}
                 handleCancelEdit={handleCancelEdit}
                 handleDeletePolygon={openDeleteModal}
+                handleAnalysis={handleAnalysis}
                 polygonCoordinates={polygonCoordinates}
             />
             <Modal

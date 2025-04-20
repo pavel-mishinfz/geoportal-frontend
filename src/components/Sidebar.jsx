@@ -19,6 +19,7 @@ const Sidebar = ({
     handleSaveEdit,
     handleCancelEdit,
     handleDeletePolygon,
+    handleAnalysis,
     polygonCoordinates,
 }) => {
     if (!isSidebarOpen) return null;
@@ -73,6 +74,7 @@ const Sidebar = ({
                         handleSaveEdit={handleSaveEdit}
                         handleCancelEdit={handleCancelEdit}
                         handleDeletePolygon={handleDeletePolygon}
+                        handleAnalysis={handleAnalysis}
                     />
                 ))}
             </div>
