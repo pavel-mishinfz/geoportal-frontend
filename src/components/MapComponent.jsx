@@ -1,6 +1,8 @@
 
 import React from 'react';
 import { YMaps, Map, TypeSelector, Polygon, Placemark, Button } from '@pbe/react-yandex-maps';
+import 'leaflet/dist/leaflet.css';
+import DetectionLayer from './DetectionLayer';
 
 const MapComponent = ({
     polygonCoordinates,
@@ -12,6 +14,7 @@ const MapComponent = ({
     handlePlacemarkDrag,
     handlePlacemarkDblClick,
     setIsSidebarOpen,
+    detections
 }) => {
     return (
         <YMaps query={{ apikey: process.env.REACT_APP_YMAP_API_KEY }}>
@@ -66,6 +69,8 @@ const MapComponent = ({
                         ))}
                     </>
                 )}
+
+                <DetectionLayer detections={detections}/>
 
                 <Button
                     data={{ content: 'Мои полигоны' }}

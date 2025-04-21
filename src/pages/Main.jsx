@@ -18,6 +18,7 @@ const Main = () => {
     const [selectedPolygonId, setSelectedPolygonId] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [detections, setDetections] = useState([]);
 
     useEffect(() => {
         fetchPolygons();
@@ -197,11 +198,12 @@ const Main = () => {
                 images_ids: listImagesInfo.map(item => item.id),
                 images_paths: listImagesInfo.map(item => item.url)
             }
-            await axios.post(`http://localhost:8009/analysis`, requestBody, {
+            const analysisResponse = await axios.post(`http://localhost:8009/analysis`, requestBody, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
             });
+            setDetections(analysisResponse.data);
         } catch (error) {
             console.error('Ошибка при загрузке снимков:', error);
         }
@@ -236,6 +238,7 @@ const Main = () => {
                 handlePlacemarkDrag={handlePlacemarkDrag}
                 handlePlacemarkDblClick={handlePlacemarkDblClick}
                 setIsSidebarOpen={setIsSidebarOpen}
+                detections={detections}
             />
             <Sidebar
                 username={username}
