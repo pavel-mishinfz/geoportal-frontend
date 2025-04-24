@@ -4,8 +4,8 @@ import { Polygon } from '@pbe/react-yandex-maps';
 const SegmentationLayer = ({ segmentations }) => {
   const getPolygonStyle = (objectTypeId) => {
     const colors = {
-      1: '#00FFFF', 2: '#FFFF00', 3: '#FF00FF', 4: '#00FF00',
-      5: '#0000FF', 6: '#FFFFFF'
+      1: '000000', 2: '#00FFFF', 3: '#FFFF00', 4: '#FF00FF', 5: '#00FF00',
+      6: '#0000FF', 7: '#FFFFFF'
     };
     return {
       fillColor: colors[objectTypeId] || '#808080',
@@ -29,7 +29,7 @@ const SegmentationLayer = ({ segmentations }) => {
   return (
     <>
       {segmentations
-        .filter(segmentation => segmentation.object_type.id !== 0)  // Фильтрация фона
+        .filter(segmentation => segmentation.object_type.id !== 1)  // Фильтрация фона
         .map((segmentation, index) => {
           const coordinates = segmentation.geometry.coordinates[0].map(([lon, lat]) => [lat, lon]);  // Преобразование для Yandex Maps
 
