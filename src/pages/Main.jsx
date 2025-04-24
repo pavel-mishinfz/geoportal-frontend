@@ -18,7 +18,7 @@ const Main = () => {
     const [selectedPolygonId, setSelectedPolygonId] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [detections, setDetections] = useState([]);
+    const [segmentations, setSegmentations] = useState([]);
 
     useEffect(() => {
         fetchPolygons();
@@ -203,7 +203,7 @@ const Main = () => {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
             });
-            setDetections(analysisResponse.data);
+            setSegmentations(analysisResponse.data);
         } catch (error) {
             console.error('Ошибка при загрузке снимков:', error);
         }
@@ -238,7 +238,7 @@ const Main = () => {
                 handlePlacemarkDrag={handlePlacemarkDrag}
                 handlePlacemarkDblClick={handlePlacemarkDblClick}
                 setIsSidebarOpen={setIsSidebarOpen}
-                detections={detections}
+                segmentations={segmentations}
             />
             <Sidebar
                 username={username}

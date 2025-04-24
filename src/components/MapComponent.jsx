@@ -2,7 +2,7 @@
 import React from 'react';
 import { YMaps, Map, TypeSelector, Polygon, Placemark, Button } from '@pbe/react-yandex-maps';
 import 'leaflet/dist/leaflet.css';
-import DetectionLayer from './DetectionLayer';
+import SegmentationLayer from './SegmentationLayer';
 
 const MapComponent = ({
     polygonCoordinates,
@@ -14,7 +14,7 @@ const MapComponent = ({
     handlePlacemarkDrag,
     handlePlacemarkDblClick,
     setIsSidebarOpen,
-    detections
+    segmentations
 }) => {
     return (
         <YMaps query={{ apikey: process.env.REACT_APP_YMAP_API_KEY }}>
@@ -70,7 +70,7 @@ const MapComponent = ({
                     </>
                 )}
 
-                <DetectionLayer detections={detections}/>
+                <SegmentationLayer segmentations={segmentations}/>
 
                 <Button
                     data={{ content: 'Мои полигоны' }}
