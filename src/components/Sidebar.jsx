@@ -20,6 +20,7 @@ const Sidebar = ({
     handleCancelEdit,
     handleDeletePolygon,
     handleAnalysis,
+    handlePreview,
     polygonCoordinates,
 }) => {
     if (!isSidebarOpen) return null;
@@ -75,6 +76,7 @@ const Sidebar = ({
                         handleCancelEdit={handleCancelEdit}
                         handleDeletePolygon={handleDeletePolygon}
                         handleAnalysis={handleAnalysis}
+                        handlePreview={handlePreview}
                     />
                 ))}
             </div>

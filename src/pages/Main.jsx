@@ -17,8 +17,11 @@ const Main = () => {
     const [selectedPolygonCoords, setSelectedPolygonCoords] = useState(null);
     const [selectedPolygonId, setSelectedPolygonId] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+    const [preview, setPreview] = useState('');
     const [detections, setDetections] = useState([]);
+
 
     useEffect(() => {
         fetchPolygons();
@@ -158,7 +161,7 @@ const Main = () => {
             setSelectedPolygonCoords(null);
             setSelectedPolygonId(null);
             fetchPolygons();
-            setIsModalOpen(false); // Закрываем модальное окно после удаления
+            setIsDeleteModalOpen(false); // Закрываем модальное окно после удаления
         } catch (error) {
             console.error('Ошибка при удалении полигона:', error);
         }
@@ -169,7 +172,7 @@ const Main = () => {
 
         const rawStartDate = new Date(today);
         rawStartDate.setFullYear(today.getFullYear() - 1);
-        const startDate = rawStartDate.toISOString().split('T')[0]; 
+        const startDate = rawStartDate.toISOString().split('T')[0];
 
         const endDate = today.toISOString().split('T')[0];
 
@@ -187,18 +190,18 @@ const Main = () => {
         }
 
         try {
-            const response = await axios.post(`http://localhost:8007/images`, requestBody, {
+            const response = await axios.post(`http://localhost:8007/images/download`, requestBody, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
             });
-            
+
             const listImagesInfo = response.data;
             requestBody = {
                 images_ids: listImagesInfo.map(item => item.id),
                 images_paths: listImagesInfo.map(item => item.url)
             }
-            const analysisResponse = await axios.post(`http://localhost:8009/analysis`, requestBody, {
+            const analysisResponse = await axios.post(`http://localhost:8008/analysis`, requestBody, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
@@ -209,12 +212,54 @@ const Main = () => {
         }
     };
 
+    const handlePreview = async (startDate, endDate) => {
+        let requestBody = {
+            id: selectedPolygonId,
+            geometry_geojson: {
+                type: "Polygon",
+                coordinates: [
+                    selectedPolygonCoords
+                ]
+            },
+            date_start: startDate, // "2024-06-01"
+            date_end: endDate, // "2024-09-01"
+            resolution: 10
+        }
+
+        try {
+            const response = await axios.post(`http://localhost:8002/images/preview`, requestBody, {
+                headers: {
+                    Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                },
+            });
+
+            setPreview(response.data);
+            setIsPreviewModalOpen(true);
+        } catch (error) {
+            console.error('Ошибка при загрузке снимков:', error);
+        }
+    };
+
+    const handleSavePreviewImages = async () => {
+        try {
+            const response = await axios.post(`http://localhost:8002/images/save?polygon_id=${selectedPolygonId}`, {
+                headers: {
+                    Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                },
+            });
+
+        } catch (error) {
+            console.error('Ошибка при сохранении снимков:', error);
+        }
+    };
+
     const openDeleteModal = () => {
-        setIsModalOpen(true); // Открываем модальное окно
+        setIsDeleteModalOpen(true); // Открываем модальное окно
     };
 
     const closeModal = () => {
-        setIsModalOpen(false); // Закрываем модальное окно
+        setIsDeleteModalOpen(false); // Закрываем модальное окно
+        setIsPreviewModalOpen(false);
     };
 
     const closeSidebar = () => {
@@ -259,10 +304,22 @@ const Main = () => {
                 handleCancelEdit={handleCancelEdit}
                 handleDeletePolygon={openDeleteModal}
                 handleAnalysis={handleAnalysis}
+                handlePreview={handlePreview}
                 polygonCoordinates={polygonCoordinates}
             />
+
             <Modal
-                isOpen={isModalOpen}
+                title={'Предпросмотр снимков'}
+                isOpen={isPreviewModalOpen}
+                onClose={closeModal}
+                onConfirm={handleSavePreviewImages}
+                onConfirmTxt={'Сохранить снимки'}
+                images={preview}
+            />
+
+            <Modal
+                title={'Подтвердить удаление'}
+                isOpen={isDeleteModalOpen}
                 onClose={closeModal}
                 onConfirm={handleDeletePolygon}
                 message={`Вы уверены, что хотите удалить полигон ${polygonName}?`}
