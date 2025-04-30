@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const PolygonItem = ({
     polygon,
@@ -11,8 +11,13 @@ const PolygonItem = ({
     handleSaveEdit,
     handleCancelEdit,
     handleDeletePolygon,
-    handleAnalysis
+    handleAnalysis,
+    handlePreview
 }) => {
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+
+
     return (
         <>
             <div
@@ -84,16 +89,56 @@ const PolygonItem = ({
                 )}
             </div>
             {isSelected && (
-                <div className='polygon-analysis'>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleAnalysis();
-                        }}
-                        className='analysis-btn'
-                    >
-                        Проанализировать
-                    </button>
+
+                <div className='polygon-footer'>
+                    <div className='polygon-footer__date'>
+
+                        <div className="date-field">
+                            <label htmlFor="start-date">Дата начала</label>
+                            <input
+                                id="start-date"
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="styled-date-input"
+                            />
+                        </div>
+
+                        <div className="date-field">
+                            <label htmlFor="end-date">Дата окончания</label>
+                            <input
+                                id="end-date"
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="styled-date-input"
+                            />
+                        </div>
+
+                    </div>
+                    <div className='polygon-footer__preview'>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handlePreview(startDate, endDate);
+                            }}
+                            className='preview-btn'
+                        >
+                            Предпросмотр снимков
+                        </button>
+                    </div>
+                    <div className='polygon-analysis'>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleAnalysis();
+                            }}
+                            className='analysis-btn'
+                        >
+                            Проанализировать
+                        </button>
+                    </div>
+
                 </div>
             )}
         </>
