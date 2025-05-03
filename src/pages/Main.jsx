@@ -19,7 +19,10 @@ const Main = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+    const [isShowImagesModalOpen, setIsShowImagesModalOpen] = useState(false);
     const [preview, setPreview] = useState('');
+    const [polygonImagesCache, setPolygonImagesCache] = useState({});
+    const [savedImges, setSavedImages] = useState('');
     const [detections, setDetections] = useState([]);
 
 
@@ -112,8 +115,49 @@ const Main = () => {
         setSelectedPolygonId(null);
     };
 
-    const handlePolygonSelect = async (polygonId) => {
+    const fetchImages = async (polygonId) => {
+        if (polygonImagesCache[polygonId]) {
+            return polygonImagesCache[polygonId];
+        }
+
         try {
+            const response = await axios.get(`http://localhost:8002/images?polygon_id=${polygonId}`, {
+                headers: {
+                    Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                },
+            });
+            const urlList = response.data.map(item => item.url);
+            setPolygonImagesCache(prev => ({
+                ...prev,
+                [polygonId]: urlList,
+            }));
+
+            return urlList;
+        } catch (error) {
+            console.error('Ошибка при загрузке снимков для полигона:', error);
+        }
+    };
+
+    const handlePolygonSelect = async (polygonId) => {
+        if (selectedPolygonId === polygonId) {
+            setSelectedPolygonCoords(null);
+            setSelectedPolygonId(null);
+            setPolygonCoordinates(null);
+            setIsAddingPolygon(false);
+            setIsEditing(false);
+            setPolygonName('');
+            return;
+        }
+
+        try {
+            // Проверяем, есть ли снимки в кэше
+            const cachedImages = polygonImagesCache[polygonId];
+
+            // Если нет — загружаем
+            if (!cachedImages) {
+                await fetchImages(polygonId);
+            }
+
             const response = await axios.get(`http://${process.env.REACT_APP_HOSTNAME}/areas/${polygonId}`, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
@@ -247,9 +291,33 @@ const Main = () => {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
             });
-
+            const urlList = response.data.map(item => item.url);
+            setPolygonImagesCache(prev => ({
+                ...prev,
+                [selectedPolygonId]: urlList,
+            }));
+            closeModal();
         } catch (error) {
             console.error('Ошибка при сохранении снимков:', error);
+        }
+    };
+
+    const handleShowSavedImages = async () => {
+        try {
+            const response = await axios.get(`http://localhost:8002/images?polygon_id=${selectedPolygonId}`, {
+                headers: {
+                    Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                },
+            });
+            const savedImages = response.data.map(item => ({
+                image_id: item.id,
+                preview: item.url
+            }))
+            setPreview(null);
+            setSavedImages(savedImages);
+            setIsShowImagesModalOpen(true);
+        } catch (error) {
+            console.error('Ошибка при получении снимков из БД:', error);
         }
     };
 
@@ -260,6 +328,7 @@ const Main = () => {
     const closeModal = () => {
         setIsDeleteModalOpen(false); // Закрываем модальное окно
         setIsPreviewModalOpen(false);
+        setIsShowImagesModalOpen(false);
     };
 
     const closeSidebar = () => {
@@ -293,6 +362,7 @@ const Main = () => {
                 isEditing={isEditing}
                 closeSidebar={closeSidebar}
                 polygonName={polygonName}
+                polygonImagesCache={polygonImagesCache}
                 setPolygonName={setPolygonName}
                 polygons={polygons}
                 selectedPolygonId={selectedPolygonId}
@@ -305,7 +375,17 @@ const Main = () => {
                 handleDeletePolygon={openDeleteModal}
                 handleAnalysis={handleAnalysis}
                 handlePreview={handlePreview}
+                handleShowSavedImages={handleShowSavedImages}
                 polygonCoordinates={polygonCoordinates}
+            />
+
+            <Modal
+                title={'Сохраненные снимки'}
+                isOpen={isShowImagesModalOpen}
+                onClose={closeModal}
+                // onConfirm={handleSavePreviewImages}
+                // onConfirmTxt={'Сохранить снимки'}
+                images={savedImges}
             />
 
             <Modal

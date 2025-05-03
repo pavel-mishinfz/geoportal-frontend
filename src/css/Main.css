@@ -10,7 +10,7 @@
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
     z-index: 1000;
     padding: 20px;
-    overflow-y: hidden;
+    overflow: scroll;
     /* Убираем прокрутку всего сайдбара */
     display: flex;
     flex-direction: column;

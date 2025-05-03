@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import Loader from './Loader';
 
 const PolygonItem = ({
     polygon,
     isSelected,
     isEditing,
     polygonName,
+    polygonImagesCache,
     setPolygonName,
     handlePolygonSelect,
     handleEditPolygon,
@@ -12,11 +14,33 @@ const PolygonItem = ({
     handleCancelEdit,
     handleDeletePolygon,
     handleAnalysis,
-    handlePreview
+    handlePreview,
+    handleShowSavedImages
 }) => {
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
+    // Получаем текущую дату
+    const today = new Date();
 
+    // Вычисляем дату год назад
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(today.getFullYear() - 1);
+
+    // Форматируем даты в строку в формате YYYY-MM-DD
+    const formatDate = (date) => {
+        return date.toISOString().split('T')[0];
+    };
+
+    const [startDate, setStartDate] = useState(formatDate(oneYearAgo));
+    const [endDate, setEndDate] = useState(formatDate(today));
+    const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+
+    useEffect(() => {
+        if (polygonImagesCache[polygon.id]) {
+            setIsLoading(false);
+        } else {
+            setIsLoading(true);
+        }
+    }, [polygonImagesCache, polygon.id]);
 
     return (
         <>
@@ -116,28 +140,52 @@ const PolygonItem = ({
                         </div>
 
                     </div>
-                    <div className='polygon-footer__preview'>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handlePreview(startDate, endDate);
-                            }}
-                            className='preview-btn'
-                        >
-                            Предпросмотр снимков
-                        </button>
-                    </div>
-                    <div className='polygon-analysis'>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleAnalysis();
-                            }}
-                            className='analysis-btn'
-                        >
-                            Проанализировать
-                        </button>
-                    </div>
+                    {isLoading ? (
+                        <Loader />
+                    ) : polygonImagesCache[polygon.id]?.length > 0 ? (
+                        <>
+                            <div className='polygon-footer__preview'>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleShowSavedImages();
+                                    }}
+                                    className='preview-btn'
+                                >
+                                    Показать снимки
+                                </button>
+                            </div>
+                            <div className='polygon-analysis'>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAnalysis();
+                                    }}
+                                    className='analysis-btn'
+                                >
+                                    Проанализировать
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <div className='polygon-footer__preview'>
+                            <button
+                                onClick={async (e) => {
+                                    e.stopPropagation();
+                                    setIsLoadingPreview(true);
+                                    await handlePreview(startDate, endDate);
+                                    setIsLoadingPreview(false);
+                                }}
+                                className='preview-btn'
+                            >
+                                {isLoadingPreview ? (
+                                    <Loader />
+                                ) : (
+                                    'Предпросмотр снимков'
+                                )}
+                            </button>
+                        </div>
+                    )}  
 
                 </div>
             )}

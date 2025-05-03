@@ -9,6 +9,7 @@ const Sidebar = ({
     isEditing,
     closeSidebar,
     polygonName,
+    polygonImagesCache,
     setPolygonName,
     polygons,
     selectedPolygonId,
@@ -21,6 +22,7 @@ const Sidebar = ({
     handleDeletePolygon,
     handleAnalysis,
     handlePreview,
+    handleShowSavedImages,
     polygonCoordinates,
 }) => {
     if (!isSidebarOpen) return null;
@@ -69,6 +71,7 @@ const Sidebar = ({
                         isSelected={selectedPolygonId === polygon.id}
                         isEditing={isEditing}
                         polygonName={polygonName}
+                        polygonImagesCache={polygonImagesCache}
                         setPolygonName={setPolygonName}
                         handlePolygonSelect={handlePolygonSelect}
                         handleEditPolygon={handleEditPolygon}
@@ -77,6 +80,7 @@ const Sidebar = ({
                         handleDeletePolygon={handleDeletePolygon}
                         handleAnalysis={handleAnalysis}
                         handlePreview={handlePreview}
+                        handleShowSavedImages={handleShowSavedImages}
                     />
                 ))}
             </div>
