@@ -16,7 +16,7 @@ const Modal = ({
     return (
         <div className="modal-overlay">
             <div className="modal-content">
-            <h3 className='modal-header'>{title}</h3>
+                <h3 className='modal-header'>{title}</h3>
                 {message && (
                     <p>{message}</p>
                 )}
@@ -33,9 +33,11 @@ const Modal = ({
                     </div>
                 )}
                 <div className="modal-buttons">
-                    <button onClick={onConfirm} className="modal-btn confirm-btn">
-                        {onConfirmTxt}
-                    </button>
+                    {onConfirm && (
+                        <button onClick={onConfirm} className="modal-btn confirm-btn">
+                            {onConfirmTxt}
+                        </button>
+                    )}
                     <button onClick={onClose} className="modal-btn cancel-btn">
                         {onCloseTxt}
                     </button>

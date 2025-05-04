@@ -22,7 +22,7 @@ const Main = () => {
     const [isShowImagesModalOpen, setIsShowImagesModalOpen] = useState(false);
     const [preview, setPreview] = useState('');
     const [polygonImagesCache, setPolygonImagesCache] = useState({});
-    const [savedImges, setSavedImages] = useState('');
+    const [savedImges, setSavedImages] = useState({});
     const [detections, setDetections] = useState([]);
 
 
@@ -121,7 +121,7 @@ const Main = () => {
         }
 
         try {
-            const response = await axios.get(`http://localhost:8002/images?polygon_id=${polygonId}`, {
+            const response = await axios.get(`http://localhost:8003/images?polygon_id=${polygonId}`, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
@@ -142,7 +142,7 @@ const Main = () => {
         if (selectedPolygonId === polygonId) {
             setSelectedPolygonCoords(null);
             setSelectedPolygonId(null);
-            setPolygonCoordinates(null);
+            setPolygonCoordinates([]);
             setIsAddingPolygon(false);
             setIsEditing(false);
             setPolygonName('');
@@ -271,7 +271,7 @@ const Main = () => {
         }
 
         try {
-            const response = await axios.post(`http://localhost:8002/images/preview`, requestBody, {
+            const response = await axios.post(`http://localhost:8003/images/preview`, requestBody, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
@@ -286,7 +286,7 @@ const Main = () => {
 
     const handleSavePreviewImages = async () => {
         try {
-            const response = await axios.post(`http://localhost:8002/images/save?polygon_id=${selectedPolygonId}`, {
+            const response = await axios.post(`http://localhost:8003/images/save?polygon_id=${selectedPolygonId}`, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
@@ -303,18 +303,25 @@ const Main = () => {
     };
 
     const handleShowSavedImages = async () => {
+        if (savedImges[selectedPolygonId]) {
+            setIsShowImagesModalOpen(true);
+            return;
+        }
+
         try {
-            const response = await axios.get(`http://localhost:8002/images?polygon_id=${selectedPolygonId}`, {
+            const response = await axios.get(`http://localhost:8003/images?polygon_id=${selectedPolygonId}`, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
             });
             const savedImages = response.data.map(item => ({
                 image_id: item.id,
-                preview: item.url
+                preview: convertLocalPathToUrl(item.url)
             }))
-            setPreview(null);
-            setSavedImages(savedImages);
+            setSavedImages(prev => ({
+                ...prev,
+                [selectedPolygonId]: savedImages,
+            }));
             setIsShowImagesModalOpen(true);
         } catch (error) {
             console.error('Ошибка при получении снимков из БД:', error);
@@ -383,9 +390,9 @@ const Main = () => {
                 title={'Сохраненные снимки'}
                 isOpen={isShowImagesModalOpen}
                 onClose={closeModal}
-                // onConfirm={handleSavePreviewImages}
-                // onConfirmTxt={'Сохранить снимки'}
-                images={savedImges}
+                onCloseTxt={'Закрыть'}
+                onConfirm={null}
+                images={savedImges[selectedPolygonId]}
             />
 
             <Modal
@@ -409,3 +416,9 @@ const Main = () => {
 };
 
 export default Main;
+
+
+const convertLocalPathToUrl = (localPath) => {
+    const fileName = localPath.split(/[\\/]/).pop();
+    return `http://localhost:8003/images/${fileName}`;
+};
