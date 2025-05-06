@@ -22,6 +22,7 @@ const Main = () => {
     const [isShowImagesModalOpen, setIsShowImagesModalOpen] = useState(false);
     const [preview, setPreview] = useState('');
     const [polygonImagesCache, setPolygonImagesCache] = useState({});
+    const [detectionResultsCache, setDetectionResultsCache] = useState({});
     const [savedImges, setSavedImages] = useState({});
     const [detections, setDetections] = useState([]);
 
@@ -138,6 +139,29 @@ const Main = () => {
         }
     };
 
+    const fetchDetectionResults = async (polygonId) => {
+        if (detectionResultsCache[polygonId]) {
+            return detectionResultsCache[polygonId];
+        }
+
+        try {
+            const response = await axios.get(`http://localhost:8004/analysis?polygon_id=${polygonId}`, {
+                headers: {
+                    Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                },
+            });
+            const detectionResult = response.data;
+            setDetectionResultsCache(prev => ({
+                ...prev,
+                [polygonId]: detectionResult,
+            }));
+
+            return detectionResult;
+        } catch (error) {
+            console.error('Ошибка при загрузке результатов анализа:', error);
+        }
+    };
+
     const handlePolygonSelect = async (polygonId) => {
         if (selectedPolygonId === polygonId) {
             setSelectedPolygonCoords(null);
@@ -146,16 +170,22 @@ const Main = () => {
             setIsAddingPolygon(false);
             setIsEditing(false);
             setPolygonName('');
+            setDetections([]);
             return;
         }
 
         try {
             // Проверяем, есть ли снимки в кэше
             const cachedImages = polygonImagesCache[polygonId];
+            // Проверяем, есть ли результат анализа в кэше
+            const cachedResult = detectionResultsCache[polygonId];
 
             // Если нет — загружаем
             if (!cachedImages) {
                 await fetchImages(polygonId);
+            }
+            if (!cachedResult) {
+                await fetchDetectionResults(polygonId)
             }
 
             const response = await axios.get(`http://${process.env.REACT_APP_HOSTNAME}/areas/${polygonId}`, {
@@ -212,48 +242,35 @@ const Main = () => {
     };
 
     const handleAnalysis = async () => {
-        const today = new Date();
-
-        const rawStartDate = new Date(today);
-        rawStartDate.setFullYear(today.getFullYear() - 1);
-        const startDate = rawStartDate.toISOString().split('T')[0];
-
-        const endDate = today.toISOString().split('T')[0];
-
-        let requestBody = {
-            id: selectedPolygonId,
-            geometry_geojson: {
-                type: "Polygon",
-                coordinates: [
-                    selectedPolygonCoords
-                ]
-            },
-            date_start: startDate, // "2024-06-01"
-            date_end: endDate, // "2024-09-01"
-            resolution: 10
-        }
-
         try {
-            const response = await axios.post(`http://localhost:8007/images/download`, requestBody, {
+            const images = await axios.get(`http://localhost:8003/images?polygon_id=${selectedPolygonId}`, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
             });
-
-            const listImagesInfo = response.data;
-            requestBody = {
+            const listImagesInfo = images.data;
+            const requestBody = {
+                polygon_id: selectedPolygonId,
                 images_ids: listImagesInfo.map(item => item.id),
                 images_paths: listImagesInfo.map(item => item.url)
             }
-            const analysisResponse = await axios.post(`http://localhost:8008/analysis`, requestBody, {
+            const analysisResults = await axios.post(`http://localhost:8004/analysis`, requestBody, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
             });
-            setDetections(analysisResponse.data);
+            setDetectionResultsCache(prev => ({
+                ...prev,
+                [selectedPolygonId]: analysisResults.data,
+            }))
         } catch (error) {
-            console.error('Ошибка при загрузке снимков:', error);
+            console.error('Ошибка при попытке анализа снимков:', error);
         }
+    };
+
+    const handleShowAnalysisResult = async (polygonId) => {
+        const result = detectionResultsCache[polygonId];
+        setDetections(result);
     };
 
     const handlePreview = async (startDate, endDate) => {
@@ -373,6 +390,7 @@ const Main = () => {
                 setPolygonName={setPolygonName}
                 polygons={polygons}
                 selectedPolygonId={selectedPolygonId}
+                detectionResultsCache={detectionResultsCache}
                 handleAddPolygon={handleAddPolygon}
                 handleSavePolygon={handleSavePolygon}
                 handlePolygonSelect={handlePolygonSelect}
@@ -383,6 +401,7 @@ const Main = () => {
                 handleAnalysis={handleAnalysis}
                 handlePreview={handlePreview}
                 handleShowSavedImages={handleShowSavedImages}
+                handleShowAnalysisResult={handleShowAnalysisResult}
                 polygonCoordinates={polygonCoordinates}
             />
 

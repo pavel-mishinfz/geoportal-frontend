@@ -8,6 +8,7 @@ const PolygonItem = ({
     polygonName,
     polygonImagesCache,
     setPolygonName,
+    detectionResultsCache,
     handlePolygonSelect,
     handleEditPolygon,
     handleSaveEdit,
@@ -15,7 +16,8 @@ const PolygonItem = ({
     handleDeletePolygon,
     handleAnalysis,
     handlePreview,
-    handleShowSavedImages
+    handleShowSavedImages,
+    handleShowAnalysisResult
 }) => {
     // Получаем текущую дату
     const today = new Date();
@@ -155,17 +157,37 @@ const PolygonItem = ({
                                     Показать снимки
                                 </button>
                             </div>
-                            <div className='polygon-analysis'>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleAnalysis();
-                                    }}
-                                    className='analysis-btn'
-                                >
-                                    Проанализировать
-                                </button>
-                            </div>
+                            {detectionResultsCache[polygon.id]?.length > 0 ? (
+                                <div className='polygon-analysis'>
+                                    <button
+                                        onClick={async (e) => {
+                                            e.stopPropagation();
+                                            await handleShowAnalysisResult(polygon.id);
+                                        }}
+                                        className='analysis-btn'
+                                    >
+                                        Посмотреть результат
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className='polygon-analysis'>
+                                    <button
+                                        onClick={async (e) => {
+                                            e.stopPropagation();
+                                            setIsLoadingPreview(true);
+                                            await handleAnalysis();
+                                            setIsLoadingPreview(false);
+                                        }}
+                                        className='analysis-btn'
+                                    >
+                                        {isLoadingPreview ? (
+                                            <Loader />
+                                        ) : (
+                                            'Проанализировать'
+                                        )}
+                                    </button>
+                                </div>
+                            )}
                         </>
                     ) : (
                         <div className='polygon-footer__preview'>
@@ -185,7 +207,7 @@ const PolygonItem = ({
                                 )}
                             </button>
                         </div>
-                    )}  
+                    )}
 
                 </div>
             )}
