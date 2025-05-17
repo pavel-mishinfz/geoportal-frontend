@@ -4,11 +4,7 @@ import { Polygon } from '@pbe/react-yandex-maps';
 const DetectionLayer = ({ detections }) => {
   const getPolygonStyle = (objectTypeId) => {
     const colors = {
-      1: '#FF0000', 2: '#0000FF', 3: '#008000', 4: '#800080',
-      5: '#FFA500', 6: '#FFFF00', 7: '#FFC0CB', 8: '#00FFFF',
-      9: '#FF00FF', 10: '#00FF00', 11: '#008080', 12: '#EE82EE',
-      13: '#A52A2A', 14: '#000080', 15: '#FF7F50', 16: '#FFD700',
-      17: '#4B0082', 18: '#40E0D0', 19: '#FA8072', 20: '#808000',
+      1: '#FF0000'
     };
     return {
       fillColor: colors[objectTypeId] || '#808080',
