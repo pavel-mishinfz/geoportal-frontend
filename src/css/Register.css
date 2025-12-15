@@ -1,0 +1,93 @@
+/* Общие настройки */
+* {
+  box-sizing: border-box;
+}
+
+/* Центрирование страницы */
+.register-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: white;
+  font-family: "Inter", sans-serif;
+}
+
+/* Карточка формы */
+.register-card {
+  width: 400px;
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 32px;
+  text-align: center;
+}
+
+/* Заголовок */
+.register-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+/* Поля формы */
+.register-form .form-group {
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.register-form label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 6px;
+  color: #333;
+}
+
+.register-form input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.register-form input:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.25);
+  outline: none;
+}
+
+/* Кнопка */
+.register-button {
+  width: 100%;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 0;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-top: 6px;
+}
+
+.register-button:hover {
+  background-color: #2563eb;
+}
+
+/* Текст под формой */
+.login-text {
+  font-size: 13px;
+  color: #555;
+  margin-top: 14px;
+}
+
+.login-text a {
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+.login-text a:hover {
+  text-decoration: underline;
+}
