@@ -91,3 +91,22 @@
 .login-text a:hover {
   text-decoration: underline;
 }
+
+.success-icon {
+  margin: 0 auto 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.success-message {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.5;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.button-group {
+  margin-top: 10px;
+}

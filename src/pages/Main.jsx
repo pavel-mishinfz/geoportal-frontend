@@ -33,7 +33,7 @@ const Main = () => {
 
     const fetchPolygons = async () => {
         try {
-            const response = await axios.get(`http://${process.env.REACT_APP_HOSTNAME}/areas?user_id=${userId}`, {
+            const response = await axios.get(`http://localhost:8000/areas?user_id=${userId}`, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
@@ -83,7 +83,7 @@ const Main = () => {
                 }
             };
             if (polygonId) {
-                await axios.put(`http://${process.env.REACT_APP_HOSTNAME}/areas/${polygonId}`, requestBody, {
+                await axios.put(`http://localhost:8000/areas/${polygonId}`, requestBody, {
                     headers: {
                         Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                     },
@@ -91,7 +91,7 @@ const Main = () => {
                 setSelectedPolygonCoords(coordinates);
                 setSelectedPolygonId(polygonId)
             } else {
-                await axios.post(`http://${process.env.REACT_APP_HOSTNAME}/areas`, requestBody, {
+                await axios.post(`http://localhost:8000/areas`, requestBody, {
                     headers: {
                         Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                     },
@@ -122,7 +122,7 @@ const Main = () => {
         }
 
         try {
-            const response = await axios.get(`http://localhost:8003/images?polygon_id=${polygonId}`, {
+            const response = await axios.get(`http://localhost:8001/images?polygon_id=${polygonId}`, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
@@ -145,7 +145,7 @@ const Main = () => {
         }
 
         try {
-            const response = await axios.get(`http://localhost:8004/analysis?polygon_id=${polygonId}`, {
+            const response = await axios.get(`http://localhost:8002/analysis?polygon_id=${polygonId}`, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
@@ -188,7 +188,7 @@ const Main = () => {
                 await fetchDetectionResults(polygonId)
             }
 
-            const response = await axios.get(`http://${process.env.REACT_APP_HOSTNAME}/areas/${polygonId}`, {
+            const response = await axios.get(`http://localhost:8000/areas/${polygonId}`, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
@@ -227,7 +227,7 @@ const Main = () => {
 
     const handleDeletePolygon = async () => {
         try {
-            await axios.delete(`http://${process.env.REACT_APP_HOSTNAME}/areas/${selectedPolygonId}`, {
+            await axios.delete(`http://localhost:8000/areas/${selectedPolygonId}`, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
@@ -243,7 +243,7 @@ const Main = () => {
 
     const handleAnalysis = async () => {
         try {
-            const images = await axios.get(`http://localhost:8003/images?polygon_id=${selectedPolygonId}`, {
+            const images = await axios.get(`http://localhost:8001/images?polygon_id=${selectedPolygonId}`, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
@@ -254,7 +254,7 @@ const Main = () => {
                 images_ids: listImagesInfo.map(item => item.id),
                 images_paths: listImagesInfo.map(item => item.url)
             }
-            const analysisResults = await axios.post(`http://localhost:8004/analysis`, requestBody, {
+            const analysisResults = await axios.post(`http://localhost:8002/analysis`, requestBody, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
@@ -288,7 +288,7 @@ const Main = () => {
         }
 
         try {
-            const response = await axios.post(`http://localhost:8003/images/preview`, requestBody, {
+            const response = await axios.post(`http://localhost:8001/images/preview`, requestBody, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
@@ -303,7 +303,7 @@ const Main = () => {
 
     const handleSavePreviewImages = async () => {
         try {
-            const response = await axios.post(`http://localhost:8003/images/save?polygon_id=${selectedPolygonId}`, {
+            const response = await axios.post(`http://localhost:8001/images/save?polygon_id=${selectedPolygonId}`, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
@@ -326,7 +326,7 @@ const Main = () => {
         }
 
         try {
-            const response = await axios.get(`http://localhost:8003/images?polygon_id=${selectedPolygonId}`, {
+            const response = await axios.get(`http://localhost:8001/images?polygon_id=${selectedPolygonId}`, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
@@ -439,5 +439,5 @@ export default Main;
 
 const convertLocalPathToUrl = (localPath) => {
     const fileName = localPath.split(/[\\/]/).pop();
-    return `http://localhost:8003/images/${fileName}`;
+    return `http://localhost:8001/images/${fileName}`;
 };

@@ -105,3 +105,11 @@
 .signup-text a:hover {
   text-decoration: underline;
 }
+
+.sended-btn {
+  background-color: #68dd77;
+}
+
+.sended-btn:hover {
+  background-color: #68dd77;
+}
