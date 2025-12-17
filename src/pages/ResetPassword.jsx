@@ -28,7 +28,7 @@ const ResetPassword = () => {
       password: password
     };
 
-    axios.post('http://' + window.location.hostname + ':8003/auth/reset-password', requestBody)
+    axios.post(`http://${window.location.hostname}:8003/auth/reset-password`, requestBody)
       .then(response => {
         console.log('Reset passwrod successful:', response.status);
         window.location.replace('/login');

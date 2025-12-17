@@ -37,7 +37,7 @@ const Register = () => {
       group_id: 2,
     };
 
-    axios.post('http://' + window.location.hostname + ':8003/auth/register', requestBody)
+    axios.post(`http://${window.location.hostname}:8003/auth/register`, requestBody)
       .then(response => {
         console.log('Registration successful:', response.status);
         
