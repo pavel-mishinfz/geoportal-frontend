@@ -6,9 +6,6 @@ import Modal from '../components/Modal';
 import '../css/Main.css';
 
 const Main = () => {
-    const username = 'Username';
-    const userId = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
-
     const [polygonCoordinates, setPolygonCoordinates] = useState([]);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [polygons, setPolygons] = useState([]);
@@ -17,16 +14,44 @@ const Main = () => {
     const [selectedPolygonCoords, setSelectedPolygonCoords] = useState(null);
     const [selectedPolygonId, setSelectedPolygonId] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+    const [isShowImagesModalOpen, setIsShowImagesModalOpen] = useState(false);
+    const [preview, setPreview] = useState('');
+    const [polygonImagesCache, setPolygonImagesCache] = useState({});
+    const [segmentationResultsCache, setSegmentationResultsCache] = useState({});
+    const [savedImges, setSavedImages] = useState({});
     const [segmentations, setSegmentations] = useState([]);
+    const [currentUser, setCurrentUser] = useState(null);
+
 
     useEffect(() => {
-        fetchPolygons();
+        fetchUserMe();
     }, []);
+
+    useEffect(() => {
+        if (currentUser) {
+            fetchPolygons();
+        }
+    }, [currentUser]);
+
+    const fetchUserMe = async () => {
+        try {
+            const response = await axios.get(`http://${window.location.hostname}:8003/users/me`, {
+                headers: {
+                    Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                },
+            });
+            setCurrentUser(response.data);
+        } catch (error) {
+            window.location.replace('/login');
+            console.error('Ошибка при загрузке полигонов:', error);
+        }
+    };
 
     const fetchPolygons = async () => {
         try {
-            const response = await axios.get(`http://${process.env.REACT_APP_HOSTNAME}/areas?user_id=${userId}`, {
+            const response = await axios.get(`http://${window.location.hostname}:8000/areas?user_id=${currentUser.id}`, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
@@ -68,7 +93,7 @@ const Main = () => {
         try {
             const closedCoordinates = [...coordinates, coordinates[0]];
             const requestBody = {
-                user_id: userId,
+                user_id: currentUser.id,
                 name: polygonName || `Polygon ${new Date().toLocaleDateString()}`,
                 geometry: {
                     type: 'Polygon',
@@ -76,7 +101,7 @@ const Main = () => {
                 }
             };
             if (polygonId) {
-                await axios.put(`http://${process.env.REACT_APP_HOSTNAME}/areas/${polygonId}`, requestBody, {
+                await axios.put(`http://${window.location.hostname}:8000/areas/${polygonId}`, requestBody, {
                     headers: {
                         Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                     },
@@ -84,7 +109,7 @@ const Main = () => {
                 setSelectedPolygonCoords(coordinates);
                 setSelectedPolygonId(polygonId)
             } else {
-                await axios.post(`http://${process.env.REACT_APP_HOSTNAME}/areas`, requestBody, {
+                await axios.post(`http://${window.location.hostname}:8000/areas`, requestBody, {
                     headers: {
                         Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                     },
@@ -109,9 +134,79 @@ const Main = () => {
         setSelectedPolygonId(null);
     };
 
-    const handlePolygonSelect = async (polygonId) => {
+    const fetchImages = async (polygonId) => {
+        if (polygonImagesCache[polygonId]) {
+            return polygonImagesCache[polygonId];
+        }
+
         try {
-            const response = await axios.get(`http://${process.env.REACT_APP_HOSTNAME}/areas/${polygonId}`, {
+            const response = await axios.get(`http://${window.location.hostname}:8001/images?polygon_id=${polygonId}`, {
+                headers: {
+                    Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                },
+            });
+            const urlList = response.data.map(item => item.url);
+            setPolygonImagesCache(prev => ({
+                ...prev,
+                [polygonId]: urlList,
+            }));
+
+            return urlList;
+        } catch (error) {
+            console.error('Ошибка при загрузке снимков для полигона:', error);
+        }
+    };
+
+    const fetchSegmentationResults = async (polygonId) => {
+        if (segmentationResultsCache[polygonId]) {
+            return segmentationResultsCache[polygonId];
+        }
+
+        try {
+            const response = await axios.get(`http://${window.location.hostname}:8002/analysis?polygon_id=${polygonId}`, {
+                headers: {
+                    Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                },
+            });
+            const segmentationResult = response.data;
+            setSegmentationResultsCache(prev => ({
+                ...prev,
+                [polygonId]: segmentationResult,
+            }));
+
+            return segmentationResult;
+        } catch (error) {
+            console.error('Ошибка при загрузке результатов анализа:', error);
+        }
+    };
+
+    const handlePolygonSelect = async (polygonId) => {
+        if (selectedPolygonId === polygonId) {
+            setSelectedPolygonCoords(null);
+            setSelectedPolygonId(null);
+            setPolygonCoordinates([]);
+            setIsAddingPolygon(false);
+            setIsEditing(false);
+            setPolygonName('');
+            setSegmentations([]);
+            return;
+        }
+
+        try {
+            // Проверяем, есть ли снимки в кэше
+            const cachedImages = polygonImagesCache[polygonId];
+            // Проверяем, есть ли результат анализа в кэше
+            const cachedResult = segmentationResultsCache[polygonId];
+
+            // Если нет — загружаем
+            if (!cachedImages) {
+                await fetchImages(polygonId);
+            }
+            if (!cachedResult) {
+                await fetchSegmentationResults(polygonId)
+            }
+
+            const response = await axios.get(`http://${window.location.hostname}:8000/areas/${polygonId}`, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
@@ -150,29 +245,78 @@ const Main = () => {
 
     const handleDeletePolygon = async () => {
         try {
-            await axios.delete(`http://${process.env.REACT_APP_HOSTNAME}/areas/${selectedPolygonId}`, {
+            await axios.delete(`http://${window.location.hostname}:8000/areas/${selectedPolygonId}`, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
             });
+
+            try {
+                await axios.delete(`http://${window.location.hostname}:8001/images?polygon_id=${selectedPolygonId}`, {
+                    headers: {
+                        Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                    },
+                });
+            } catch (error) {
+                console.error('Ошибка при удалении снимков полигона:', error);
+
+            }
+
+            try {
+                await axios.delete(`http://${window.location.hostname}:8002/analysis?polygon_id=${selectedPolygonId}`, {
+                    headers: {
+                        Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                    },
+                });
+            } catch (error) {
+                console.error('Ошибка при удалении результатов анализа полигона:', error);
+
+            }
+
             setSelectedPolygonCoords(null);
             setSelectedPolygonId(null);
             fetchPolygons();
-            setIsModalOpen(false); // Закрываем модальное окно после удаления
+            setIsDeleteModalOpen(false); // Закрываем модальное окно после удаления
+            setSegmentationResultsCache([]);
+            setSegmentations([]);
         } catch (error) {
             console.error('Ошибка при удалении полигона:', error);
         }
     };
 
     const handleAnalysis = async () => {
-        const today = new Date();
+        try {
+            const images = await axios.get(`http://${window.location.hostname}:8001/images?polygon_id=${selectedPolygonId}`, {
+                headers: {
+                    Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                },
+            });
+            const listImagesInfo = images.data;
+            const requestBody = {
+                polygon_id: selectedPolygonId,
+                images_ids: listImagesInfo.map(item => item.id),
+                images_paths: listImagesInfo.map(item => item.url)
+            }
+            const analysisResults = await axios.post(`http://${window.location.hostname}:8002/analysis`, requestBody, {
+                headers: {
+                    Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                },
+            });
+            setSegmentationResultsCache(prev => ({
+                ...prev,
+                [selectedPolygonId]: analysisResults.data,
+            }))
+        } catch (error) {
+            console.error('Ошибка при попытке анализа снимков:', error);
+        }
+    };
 
-        const rawStartDate = new Date(today);
-        rawStartDate.setFullYear(today.getFullYear() - 1);
-        const startDate = rawStartDate.toISOString().split('T')[0]; 
+    const handleShowAnalysisResult = async (polygonId) => {
+        const result = segmentationResultsCache[polygonId];
+        setSegmentations(result);
+    };
 
-        const endDate = today.toISOString().split('T')[0];
-
+    const handlePreview = async (startDate, endDate) => {
         let requestBody = {
             id: selectedPolygonId,
             geometry_geojson: {
@@ -187,34 +331,71 @@ const Main = () => {
         }
 
         try {
-            const response = await axios.post(`http://localhost:8007/images`, requestBody, {
+            const response = await axios.post(`http://${window.location.hostname}:8001/images/preview`, requestBody, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
             });
-            
-            const listImagesInfo = response.data;
-            requestBody = {
-                images_ids: listImagesInfo.map(item => item.id),
-                images_paths: listImagesInfo.map(item => item.url)
-            }
-            const analysisResponse = await axios.post(`http://localhost:8009/analysis`, requestBody, {
-                headers: {
-                    Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
-                },
-            });
-            setSegmentations(analysisResponse.data);
+
+            setPreview(response.data);
+            setIsPreviewModalOpen(true);
         } catch (error) {
             console.error('Ошибка при загрузке снимков:', error);
         }
     };
 
+    const handleSavePreviewImages = async () => {
+        try {
+            const response = await axios.post(`http://${window.location.hostname}:8001/images/save?polygon_id=${selectedPolygonId}`, {
+                headers: {
+                    Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                },
+            });
+            const urlList = response.data.map(item => item.url);
+            setPolygonImagesCache(prev => ({
+                ...prev,
+                [selectedPolygonId]: urlList,
+            }));
+            closeModal();
+        } catch (error) {
+            console.error('Ошибка при сохранении снимков:', error);
+        }
+    };
+
+    const handleShowSavedImages = async () => {
+        if (savedImges[selectedPolygonId]) {
+            setIsShowImagesModalOpen(true);
+            return;
+        }
+
+        try {
+            const response = await axios.get(`http://${window.location.hostname}:8001/images?polygon_id=${selectedPolygonId}`, {
+                headers: {
+                    Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                },
+            });
+            const savedImages = response.data.map(item => ({
+                image_id: item.id,
+                preview: convertLocalPathToUrl(item.url)
+            }))
+            setSavedImages(prev => ({
+                ...prev,
+                [selectedPolygonId]: savedImages,
+            }));
+            setIsShowImagesModalOpen(true);
+        } catch (error) {
+            console.error('Ошибка при получении снимков из БД:', error);
+        }
+    };
+
     const openDeleteModal = () => {
-        setIsModalOpen(true); // Открываем модальное окно
+        setIsDeleteModalOpen(true); // Открываем модальное окно
     };
 
     const closeModal = () => {
-        setIsModalOpen(false); // Закрываем модальное окно
+        setIsDeleteModalOpen(false); // Закрываем модальное окно
+        setIsPreviewModalOpen(false);
+        setIsShowImagesModalOpen(false);
     };
 
     const closeSidebar = () => {
@@ -224,51 +405,102 @@ const Main = () => {
         setIsEditing(false);
         setSelectedPolygonCoords(null);
         setSelectedPolygonId(null);
+        setSegmentations([]);
+    };
+
+    const handleLogout = async () => {
+        try {
+            await axios.post(`http://${window.location.hostname}:8003/auth/jwt/logout`, {}, {
+                headers: {
+                    Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                },
+            });
+            sessionStorage.clear();
+            window.location.replace('/');
+        } catch (error) {
+            console.error('Ошибка при выходе из приложения:', error);
+        }
     };
 
     return (
-        <div style={{ position: 'relative' }}>
-            <MapComponent
-                polygonCoordinates={polygonCoordinates}
-                selectedPolygonCoords={selectedPolygonCoords}
-                isAddingPolygon={isAddingPolygon}
-                isEditing={isEditing}
-                handleMapClick={handleMapClick}
-                handleMapDblClick={handleMapDblClick}
-                handlePlacemarkDrag={handlePlacemarkDrag}
-                handlePlacemarkDblClick={handlePlacemarkDblClick}
-                setIsSidebarOpen={setIsSidebarOpen}
-                segmentations={segmentations}
-            />
-            <Sidebar
-                username={username}
-                isSidebarOpen={isSidebarOpen}
-                setIsSidebarOpen={setIsSidebarOpen}
-                isAddingPolygon={isAddingPolygon}
-                isEditing={isEditing}
-                closeSidebar={closeSidebar}
-                polygonName={polygonName}
-                setPolygonName={setPolygonName}
-                polygons={polygons}
-                selectedPolygonId={selectedPolygonId}
-                handleAddPolygon={handleAddPolygon}
-                handleSavePolygon={handleSavePolygon}
-                handlePolygonSelect={handlePolygonSelect}
-                handleEditPolygon={handleEditPolygon}
-                handleSaveEdit={handleSaveEdit}
-                handleCancelEdit={handleCancelEdit}
-                handleDeletePolygon={openDeleteModal}
-                handleAnalysis={handleAnalysis}
-                polygonCoordinates={polygonCoordinates}
-            />
-            <Modal
-                isOpen={isModalOpen}
-                onClose={closeModal}
-                onConfirm={handleDeletePolygon}
-                message={`Вы уверены, что хотите удалить полигон ${polygonName}?`}
-            />
-        </div>
+        <>
+            {currentUser && polygons && (
+                <div style={{ position: 'relative' }}>
+                    <MapComponent
+                        polygonCoordinates={polygonCoordinates}
+                        selectedPolygonCoords={selectedPolygonCoords}
+                        isAddingPolygon={isAddingPolygon}
+                        isEditing={isEditing}
+                        handleMapClick={handleMapClick}
+                        handleMapDblClick={handleMapDblClick}
+                        handlePlacemarkDrag={handlePlacemarkDrag}
+                        handlePlacemarkDblClick={handlePlacemarkDblClick}
+                        setIsSidebarOpen={setIsSidebarOpen}
+                        segmentations={segmentations}
+                    />
+                    <Sidebar
+                        username={currentUser.username}
+                        isSidebarOpen={isSidebarOpen}
+                        setIsSidebarOpen={setIsSidebarOpen}
+                        isAddingPolygon={isAddingPolygon}
+                        isEditing={isEditing}
+                        closeSidebar={closeSidebar}
+                        polygonName={polygonName}
+                        polygonImagesCache={polygonImagesCache}
+                        setPolygonName={setPolygonName}
+                        polygons={polygons}
+                        selectedPolygonId={selectedPolygonId}
+                        segmentationResultsCache={segmentationResultsCache}
+                        handleAddPolygon={handleAddPolygon}
+                        handleSavePolygon={handleSavePolygon}
+                        handlePolygonSelect={handlePolygonSelect}
+                        handleEditPolygon={handleEditPolygon}
+                        handleSaveEdit={handleSaveEdit}
+                        handleCancelEdit={handleCancelEdit}
+                        handleDeletePolygon={openDeleteModal}
+                        handleAnalysis={handleAnalysis}
+                        handlePreview={handlePreview}
+                        handleShowSavedImages={handleShowSavedImages}
+                        handleShowAnalysisResult={handleShowAnalysisResult}
+                        handleLogout={handleLogout}
+                        polygonCoordinates={polygonCoordinates}
+                    />
+
+                    <Modal
+                        title={'Сохраненные снимки'}
+                        isOpen={isShowImagesModalOpen}
+                        onClose={closeModal}
+                        onCloseTxt={'Закрыть'}
+                        onConfirm={null}
+                        images={savedImges[selectedPolygonId]}
+                    />
+
+                    <Modal
+                        title={'Предпросмотр снимков'}
+                        isOpen={isPreviewModalOpen}
+                        onClose={closeModal}
+                        onConfirm={handleSavePreviewImages}
+                        onConfirmTxt={'Сохранить снимки'}
+                        images={preview}
+                    />
+
+                    <Modal
+                        title={'Подтвердить удаление'}
+                        isOpen={isDeleteModalOpen}
+                        onClose={closeModal}
+                        onConfirm={handleDeletePolygon}
+                        message={`Вы уверены, что хотите удалить полигон ${polygonName}?`}
+                    />
+                </div>
+            )}
+        </>
     );
 };
 
 export default Main;
+
+
+const convertLocalPathToUrl = (localPath) => {
+    const fileName = localPath.split(/[\\/]/).pop();
+    return `http://${window.location.hostname}:8001/images/${fileName}`;
+};

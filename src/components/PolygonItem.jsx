@@ -1,18 +1,49 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import Loader from './Loader';
 
 const PolygonItem = ({
     polygon,
     isSelected,
     isEditing,
     polygonName,
+    polygonImagesCache,
     setPolygonName,
+    segmentationResultsCache,
     handlePolygonSelect,
     handleEditPolygon,
     handleSaveEdit,
     handleCancelEdit,
     handleDeletePolygon,
-    handleAnalysis
+    handleAnalysis,
+    handlePreview,
+    handleShowSavedImages,
+    handleShowAnalysisResult
 }) => {
+    // Получаем текущую дату
+    const today = new Date();
+
+    // Вычисляем дату год назад
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(today.getFullYear() - 1);
+
+    // Форматируем даты в строку в формате YYYY-MM-DD
+    const formatDate = (date) => {
+        return date.toISOString().split('T')[0];
+    };
+
+    const [startDate, setStartDate] = useState(formatDate(oneYearAgo));
+    const [endDate, setEndDate] = useState(formatDate(today));
+    const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+
+    useEffect(() => {
+        if (polygonImagesCache[polygon.id]) {
+            setIsLoading(false);
+        } else {
+            setIsLoading(true);
+        }
+    }, [polygonImagesCache, polygon.id]);
+
     return (
         <>
             <div
@@ -84,16 +115,100 @@ const PolygonItem = ({
                 )}
             </div>
             {isSelected && (
-                <div className='polygon-analysis'>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleAnalysis();
-                        }}
-                        className='analysis-btn'
-                    >
-                        Проанализировать
-                    </button>
+
+                <div className='polygon-footer'>
+                    <div className='polygon-footer__date'>
+
+                        <div className="date-field">
+                            <label htmlFor="start-date">Дата начала</label>
+                            <input
+                                id="start-date"
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="styled-date-input"
+                            />
+                        </div>
+
+                        <div className="date-field">
+                            <label htmlFor="end-date">Дата окончания</label>
+                            <input
+                                id="end-date"
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="styled-date-input"
+                            />
+                        </div>
+
+                    </div>
+                    {isLoading ? (
+                        <Loader />
+                    ) : polygonImagesCache[polygon.id]?.length > 0 ? (
+                        <>
+                            <div className='polygon-footer__preview'>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleShowSavedImages();
+                                    }}
+                                    className='preview-btn'
+                                >
+                                    Показать снимки
+                                </button>
+                            </div>
+                            {segmentationResultsCache[polygon.id]?.length > 0 ? (
+                                <div className='polygon-analysis'>
+                                    <button
+                                        onClick={async (e) => {
+                                            e.stopPropagation();
+                                            await handleShowAnalysisResult(polygon.id);
+                                        }}
+                                        className='analysis-btn'
+                                    >
+                                        Посмотреть результат
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className='polygon-analysis'>
+                                    <button
+                                        onClick={async (e) => {
+                                            e.stopPropagation();
+                                            setIsLoadingPreview(true);
+                                            await handleAnalysis();
+                                            setIsLoadingPreview(false);
+                                        }}
+                                        className='analysis-btn'
+                                    >
+                                        {isLoadingPreview ? (
+                                            <Loader />
+                                        ) : (
+                                            'Проанализировать'
+                                        )}
+                                    </button>
+                                </div>
+                            )}
+                        </>
+                    ) : (
+                        <div className='polygon-footer__preview'>
+                            <button
+                                onClick={async (e) => {
+                                    e.stopPropagation();
+                                    setIsLoadingPreview(true);
+                                    await handlePreview(startDate, endDate);
+                                    setIsLoadingPreview(false);
+                                }}
+                                className='preview-btn'
+                            >
+                                {isLoadingPreview ? (
+                                    <Loader />
+                                ) : (
+                                    'Предпросмотр снимков'
+                                )}
+                            </button>
+                        </div>
+                    )}
+
                 </div>
             )}
         </>

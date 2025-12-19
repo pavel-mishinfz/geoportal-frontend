@@ -13,11 +13,31 @@
 
 .modal-content {
     background-color: white;
+    margin: 0 20px;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     text-align: center;
     min-width: 300px;
+}
+
+.modal-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 1rem 0;
+    justify-content: center;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.preview-image {
+    width: auto;
+    height: auto;
+    /* max-width: 800px; */
+    /* max-height: 800px; */
+    border: 1px solid #ccc;
+    border-radius: 4px;
 }
 
 .modal-buttons {

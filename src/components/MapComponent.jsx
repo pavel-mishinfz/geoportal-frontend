@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { YMaps, Map, TypeSelector, Polygon, Placemark, Button } from '@pbe/react-yandex-maps';
-import 'leaflet/dist/leaflet.css';
+// import 'leaflet/dist/leaflet.css';
 import SegmentationLayer from './SegmentationLayer';
 
 const MapComponent = ({

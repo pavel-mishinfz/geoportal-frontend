@@ -9,9 +9,11 @@ const Sidebar = ({
     isEditing,
     closeSidebar,
     polygonName,
+    polygonImagesCache,
     setPolygonName,
     polygons,
     selectedPolygonId,
+    segmentationResultsCache,
     handleAddPolygon,
     handleSavePolygon,
     handlePolygonSelect,
@@ -20,6 +22,10 @@ const Sidebar = ({
     handleCancelEdit,
     handleDeletePolygon,
     handleAnalysis,
+    handlePreview,
+    handleShowSavedImages,
+    handleShowAnalysisResult,
+    handleLogout,
     polygonCoordinates,
 }) => {
     if (!isSidebarOpen) return null;
@@ -68,15 +74,24 @@ const Sidebar = ({
                         isSelected={selectedPolygonId === polygon.id}
                         isEditing={isEditing}
                         polygonName={polygonName}
+                        polygonImagesCache={polygonImagesCache}
                         setPolygonName={setPolygonName}
+                        segmentationResultsCache={segmentationResultsCache}
                         handlePolygonSelect={handlePolygonSelect}
                         handleEditPolygon={handleEditPolygon}
                         handleSaveEdit={handleSaveEdit}
                         handleCancelEdit={handleCancelEdit}
                         handleDeletePolygon={handleDeletePolygon}
                         handleAnalysis={handleAnalysis}
+                        handlePreview={handlePreview}
+                        handleShowSavedImages={handleShowSavedImages}
+                        handleShowAnalysisResult={handleShowAnalysisResult}
                     />
                 ))}
+            </div>
+
+            <div className='logout' onClick={handleLogout}>
+                <p>Выйти</p>
             </div>
         </div>
     );
