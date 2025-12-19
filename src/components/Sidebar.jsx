@@ -25,6 +25,7 @@ const Sidebar = ({
     handlePreview,
     handleShowSavedImages,
     handleShowAnalysisResult,
+    handleLogout,
     polygonCoordinates,
 }) => {
     if (!isSidebarOpen) return null;
@@ -87,6 +88,10 @@ const Sidebar = ({
                         handleShowAnalysisResult={handleShowAnalysisResult}
                     />
                 ))}
+            </div>
+
+            <div className='logout' onClick={handleLogout}>
+                <p>Выйти</p>
             </div>
         </div>
     );

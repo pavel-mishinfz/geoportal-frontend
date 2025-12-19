@@ -6,9 +6,6 @@ import Modal from '../components/Modal';
 import '../css/Main.css';
 
 const Main = () => {
-    const username = 'Username';
-    const userId = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
-
     const [polygonCoordinates, setPolygonCoordinates] = useState([]);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [polygons, setPolygons] = useState([]);
@@ -25,15 +22,36 @@ const Main = () => {
     const [detectionResultsCache, setDetectionResultsCache] = useState({});
     const [savedImges, setSavedImages] = useState({});
     const [detections, setDetections] = useState([]);
+    const [currentUser, setCurrentUser] = useState(null);
 
 
     useEffect(() => {
-        fetchPolygons();
+        fetchUserMe();
     }, []);
+
+    useEffect(() => {
+        if (currentUser) {
+            fetchPolygons();
+        }
+    }, [currentUser]);
+
+    const fetchUserMe = async () => {
+        try {
+            const response = await axios.get(`http://${window.location.hostname}:8003/users/me`, {
+                headers: {
+                    Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                },
+            });
+            setCurrentUser(response.data);
+        } catch (error) {
+            window.location.replace('/login');
+            console.error('Ошибка при загрузке полигонов:', error);
+        }
+    };
 
     const fetchPolygons = async () => {
         try {
-            const response = await axios.get(`http://${window.location.hostname}:8000/areas?user_id=${userId}`, {
+            const response = await axios.get(`http://${window.location.hostname}:8000/areas?user_id=${currentUser.id}`, {
                 headers: {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
@@ -75,7 +93,7 @@ const Main = () => {
         try {
             const closedCoordinates = [...coordinates, coordinates[0]];
             const requestBody = {
-                user_id: userId,
+                user_id: currentUser.id,
                 name: polygonName || `Polygon ${new Date().toLocaleDateString()}`,
                 geometry: {
                     type: 'Polygon',
@@ -232,10 +250,35 @@ const Main = () => {
                     Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
                 },
             });
+
+            try {
+                await axios.delete(`http://${window.location.hostname}:8001/images?polygon_id=${selectedPolygonId}`, {
+                    headers: {
+                        Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                    },
+                });
+            } catch (error) {
+                console.error('Ошибка при удалении снимков полигона:', error);
+
+            }
+
+            try {
+                await axios.delete(`http://${window.location.hostname}:8002/analysis?polygon_id=${selectedPolygonId}`, {
+                    headers: {
+                        Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                    },
+                });
+            } catch (error) {
+                console.error('Ошибка при удалении результатов анализа полигона:', error);
+
+            }
+
             setSelectedPolygonCoords(null);
             setSelectedPolygonId(null);
             fetchPolygons();
             setIsDeleteModalOpen(false); // Закрываем модальное окно после удаления
+            setDetectionResultsCache([]);
+            setDetections([]);
         } catch (error) {
             console.error('Ошибка при удалении полигона:', error);
         }
@@ -362,75 +405,95 @@ const Main = () => {
         setIsEditing(false);
         setSelectedPolygonCoords(null);
         setSelectedPolygonId(null);
+        setDetections([]);
+    };
+
+    const handleLogout = async () => {
+        try {
+            await axios.post(`http://${window.location.hostname}:8003/auth/jwt/logout`, {}, {
+                headers: {
+                    Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+                },
+            });
+            sessionStorage.clear();
+            window.location.replace('/');
+        } catch (error) {
+            console.error('Ошибка при выходе из приложения:', error);
+        }
     };
 
     return (
-        <div style={{ position: 'relative' }}>
-            <MapComponent
-                polygonCoordinates={polygonCoordinates}
-                selectedPolygonCoords={selectedPolygonCoords}
-                isAddingPolygon={isAddingPolygon}
-                isEditing={isEditing}
-                handleMapClick={handleMapClick}
-                handleMapDblClick={handleMapDblClick}
-                handlePlacemarkDrag={handlePlacemarkDrag}
-                handlePlacemarkDblClick={handlePlacemarkDblClick}
-                setIsSidebarOpen={setIsSidebarOpen}
-                detections={detections}
-            />
-            <Sidebar
-                username={username}
-                isSidebarOpen={isSidebarOpen}
-                setIsSidebarOpen={setIsSidebarOpen}
-                isAddingPolygon={isAddingPolygon}
-                isEditing={isEditing}
-                closeSidebar={closeSidebar}
-                polygonName={polygonName}
-                polygonImagesCache={polygonImagesCache}
-                setPolygonName={setPolygonName}
-                polygons={polygons}
-                selectedPolygonId={selectedPolygonId}
-                detectionResultsCache={detectionResultsCache}
-                handleAddPolygon={handleAddPolygon}
-                handleSavePolygon={handleSavePolygon}
-                handlePolygonSelect={handlePolygonSelect}
-                handleEditPolygon={handleEditPolygon}
-                handleSaveEdit={handleSaveEdit}
-                handleCancelEdit={handleCancelEdit}
-                handleDeletePolygon={openDeleteModal}
-                handleAnalysis={handleAnalysis}
-                handlePreview={handlePreview}
-                handleShowSavedImages={handleShowSavedImages}
-                handleShowAnalysisResult={handleShowAnalysisResult}
-                polygonCoordinates={polygonCoordinates}
-            />
+        <>
+            {currentUser && polygons && (
+                <div style={{ position: 'relative' }}>
+                    <MapComponent
+                        polygonCoordinates={polygonCoordinates}
+                        selectedPolygonCoords={selectedPolygonCoords}
+                        isAddingPolygon={isAddingPolygon}
+                        isEditing={isEditing}
+                        handleMapClick={handleMapClick}
+                        handleMapDblClick={handleMapDblClick}
+                        handlePlacemarkDrag={handlePlacemarkDrag}
+                        handlePlacemarkDblClick={handlePlacemarkDblClick}
+                        setIsSidebarOpen={setIsSidebarOpen}
+                        detections={detections}
+                    />
+                    <Sidebar
+                        username={currentUser.username}
+                        isSidebarOpen={isSidebarOpen}
+                        setIsSidebarOpen={setIsSidebarOpen}
+                        isAddingPolygon={isAddingPolygon}
+                        isEditing={isEditing}
+                        closeSidebar={closeSidebar}
+                        polygonName={polygonName}
+                        polygonImagesCache={polygonImagesCache}
+                        setPolygonName={setPolygonName}
+                        polygons={polygons}
+                        selectedPolygonId={selectedPolygonId}
+                        detectionResultsCache={detectionResultsCache}
+                        handleAddPolygon={handleAddPolygon}
+                        handleSavePolygon={handleSavePolygon}
+                        handlePolygonSelect={handlePolygonSelect}
+                        handleEditPolygon={handleEditPolygon}
+                        handleSaveEdit={handleSaveEdit}
+                        handleCancelEdit={handleCancelEdit}
+                        handleDeletePolygon={openDeleteModal}
+                        handleAnalysis={handleAnalysis}
+                        handlePreview={handlePreview}
+                        handleShowSavedImages={handleShowSavedImages}
+                        handleShowAnalysisResult={handleShowAnalysisResult}
+                        handleLogout={handleLogout}
+                        polygonCoordinates={polygonCoordinates}
+                    />
 
-            <Modal
-                title={'Сохраненные снимки'}
-                isOpen={isShowImagesModalOpen}
-                onClose={closeModal}
-                onCloseTxt={'Закрыть'}
-                onConfirm={null}
-                images={savedImges[selectedPolygonId]}
-            />
+                    <Modal
+                        title={'Сохраненные снимки'}
+                        isOpen={isShowImagesModalOpen}
+                        onClose={closeModal}
+                        onCloseTxt={'Закрыть'}
+                        onConfirm={null}
+                        images={savedImges[selectedPolygonId]}
+                    />
 
-            <Modal
-                title={'Предпросмотр снимков'}
-                isOpen={isPreviewModalOpen}
-                onClose={closeModal}
-                onConfirm={handleSavePreviewImages}
-                onConfirmTxt={'Сохранить снимки'}
-                images={preview}
-            />
+                    <Modal
+                        title={'Предпросмотр снимков'}
+                        isOpen={isPreviewModalOpen}
+                        onClose={closeModal}
+                        onConfirm={handleSavePreviewImages}
+                        onConfirmTxt={'Сохранить снимки'}
+                        images={preview}
+                    />
 
-            <Modal
-                title={'Подтвердить удаление'}
-                isOpen={isDeleteModalOpen}
-                onClose={closeModal}
-                onConfirm={handleDeletePolygon}
-                message={`Вы уверены, что хотите удалить полигон ${polygonName}?`}
-            />
-        </div>
+                    <Modal
+                        title={'Подтвердить удаление'}
+                        isOpen={isDeleteModalOpen}
+                        onClose={closeModal}
+                        onConfirm={handleDeletePolygon}
+                        message={`Вы уверены, что хотите удалить полигон ${polygonName}?`}
+                    />
+                </div>
+            )}
+        </>
     );
 };
 

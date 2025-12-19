@@ -254,3 +254,8 @@
 .analysis-btn {
     background-color: #cc0000;
 }
+
+.logout > p:hover {
+    cursor: pointer;
+    text-decoration: underline;
+}
